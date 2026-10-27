@@ -32,10 +32,6 @@ h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; }
 .err { color: var(--bad); font-size: 13px; margin: 8px 0 0; }
 .filters { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 16px; }
 .f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.seg button { font: inherit; font-size: 13px; background: var(--panel); color: var(--muted); border: 0; padding: 6px 12px; cursor: pointer; }
-.seg button + button { border-left: 1px solid var(--line); }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); font-weight: 600; }
 .ms { position: relative; }
 .ms-btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 10rem; text-align: left; cursor: pointer; line-height: 1.25; }
 .ms-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 14rem; }
@@ -55,7 +51,7 @@ h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; }
 .narrow-in { min-width: 6rem; }
 .check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 0; cursor: pointer; }
 .reset { font: inherit; font-size: 13px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 6px 0; }
-.meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 16px; }
 .legend { display: flex; gap: 16px; }
 .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; background: currentColor; }
 .legend .w { color: var(--warn); } .legend .b { color: var(--bad); }
@@ -114,9 +110,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     <div class="filters">
       <label class="f">Year<select class="in narrow-in" id="f-year"></select></label>
       <label class="f">Month<select class="in narrow-in" id="f-month"></select></label>
-      <div class="f">Region
-        <div class="seg" role="group" aria-label="Region" id="f-region"></div>
-      </div>
+      <div class="f"><span id="l-region">Region</span><div class="ms" id="f-region"></div></div>
       <div class="f"><span id="l-market">Market</span><div class="ms" id="f-market"></div></div>
       <div class="f"><span id="l-brand">Brand</span><div class="ms" id="f-brand"></div></div>
       <label class="f">Search<input class="in search" id="f-q" type="search" placeholder="Site, market or brand"></label>
@@ -173,7 +167,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
 
   let rows = [];
   let sort = { k: 'apdex', asc: true };
-  const st = { year: null, month: null, region: '', markets: new Set(), brands: new Set(), q: '', off: false };
+  const st = { year: null, month: null, regions: new Set(), markets: new Set(), brands: new Set(), q: '', off: false };
 
   const level = (c, v) => {
     if (!c.t || v == null) return '';
@@ -224,7 +218,6 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       $('loading').hidden = rows.length > 0;
       if (!rows.length) { $('loading').textContent = 'No data yet.'; $('table-card').hidden = true; return; }
       $('table-card').hidden = false;
-      if (st.region && !rows.some((r) => r.region === st.region)) Object.assign(st, { region: '', markets: new Set(), brands: new Set() });
       const keep = st.year != null && rows.some((r) => r.y === st.year && r.m === st.month);
       if (!keep) setLatest();
       draw();
@@ -253,10 +246,6 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     const k = b.dataset.k, c = COLS.find((x) => x.k === k);
     if (sort.k === k) sort.asc = !sort.asc; else sort = { k, asc: c.t ? c.t[2] : true };
     draw();
-  });
-  $('f-region').addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
-    Object.assign(st, { region: b.dataset.r, markets: new Set(), brands: new Set() }); draw();
   });
   // ---------- multi-select dropdown ----------
   const openPanels = new Set();
@@ -322,12 +311,13 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   }
   document.addEventListener('click', () => openPanels.forEach((c) => c()));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') openPanels.forEach((c) => c()); });
+  const msRegion = multiSelect($('f-region'), 'region', 'l-region', (v) => { st.regions = v; draw(); });
   const msMarket = multiSelect($('f-market'), 'market', 'l-market', (v) => { st.markets = v; draw(); });
   const msBrand = multiSelect($('f-brand'), 'brand', 'l-brand', (v) => { st.brands = v; draw(); });
   $('f-q').addEventListener('input', (e) => { st.q = e.target.value.trim().toLowerCase(); draw(); });
   $('f-off').addEventListener('change', (e) => { st.off = e.target.checked; draw(); });
   $('f-reset').addEventListener('click', () => {
-    Object.assign(st, { region: '', markets: new Set(), brands: new Set(), q: '', off: false }); setLatest();
+    Object.assign(st, { regions: new Set(), markets: new Set(), brands: new Set(), q: '', off: false }); setLatest();
     $('f-q').value = ''; sort = { k: 'apdex', asc: true }; draw();
   });
 
@@ -363,13 +353,8 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       $('f-month').value = String(st.month);
       base = rows.filter((r) => r.y === st.year && r.m === st.month);
     }
-    const regions = [...new Set(base.map((r) => r.region).filter(Boolean))].sort();
-    const seg = $('f-region');
-    seg.replaceChildren(...[''].concat(regions).map((r) => {
-      const b = document.createElement('button'); b.type = 'button'; b.dataset.r = r; b.textContent = r || 'All';
-      b.setAttribute('aria-pressed', String(r === st.region)); return b;
-    }));
-    const inRegion = base.filter((r) => !st.region || r.region === st.region);
+    st.regions = msRegion.set([...new Set(base.map((r) => r.region).filter(Boolean))].sort(), st.regions);
+    const inRegion = base.filter((r) => !st.regions.size || st.regions.has(r.region));
     st.markets = msMarket.set([...new Set(inRegion.map((r) => r.market).filter(Boolean))].sort(), st.markets);
     const inMarket = inRegion.filter((r) => !st.markets.size || st.markets.has(r.market));
     st.brands = msBrand.set([...new Set(inMarket.map((r) => r.brand).filter(Boolean))].sort(), st.brands);
