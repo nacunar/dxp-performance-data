@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DXP+ Performance Tracker</title>
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --fg: #1d1d1b; --muted: #6b6a66; --line: #e3e2de;
+  --ok: #2f7d4f; --warn: #a86400; --bad: #c0362c; --accent: #1d1d1b; --accent-fg: #ffffff;
+  --radius: 10px; --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --serif: Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a19; --panel: #232322; --fg: #ecebe8; --muted: #a09f9a; --line: #3a3a38;
+    --ok: #6cc28f; --warn: #e6a64a; --bad: #f07a6e; --accent: #ecebe8; --accent-fg: #1a1a19;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a1a19; --panel: #232322; --fg: #ecebe8; --muted: #a09f9a; --line: #3a3a38;
+  --ok: #6cc28f; --warn: #e6a64a; --bad: #f07a6e; --accent: #ecebe8; --accent-fg: #1a1a19;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 32px 16px 48px; display: flex; flex-direction: column; gap: 24px; }
+h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; }
+.sub { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; min-width: 0; }
+.source { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between; }
+.source-info { font-size: 13px; color: var(--muted); }
+.source-info b { color: var(--fg); font-weight: 600; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { font: inherit; font-size: 13px; border-radius: 8px; padding: 7px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn[hidden] { display: none; }
+.drop { border: 1.5px dashed var(--line); border-radius: var(--radius); padding: 40px 16px; text-align: center; color: var(--muted); font-size: 14px; }
+.drop.over, body.over .drop { border-color: var(--fg); color: var(--fg); }
+.err { color: var(--bad); font-size: 13px; margin: 8px 0 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 16px; }
+.f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-size: 13px; background: var(--panel); color: var(--muted); border: 0; padding: 6px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.in { font: inherit; font-size: 13px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; min-width: 9rem; max-width: 100%; }
+.search { width: 14rem; }
+.narrow-in { min-width: 6rem; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 0; cursor: pointer; }
+.reset { font: inherit; font-size: 13px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 6px 0; }
+.meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.legend { display: flex; gap: 16px; }
+.legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; background: currentColor; }
+.legend .w { color: var(--warn); } .legend .b { color: var(--bad); }
+.tablewrap { max-height: 36rem; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th { position: sticky; top: 0; z-index: 1; background: var(--panel); text-align: right; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line); padding: 0; white-space: nowrap; }
+th button { font: inherit; color: inherit; background: none; border: 0; padding: 6px 8px 0; cursor: pointer; width: 100%; text-align: inherit; }
+th[aria-sort] button { color: var(--fg); }
+th[aria-sort="ascending"] button::after { content: " ↑"; } th[aria-sort="descending"] button::after { content: " ↓"; }
+th small { display: block; font-weight: 400; font-size: 11px; padding: 0 8px 6px; }
+td { text-align: right; padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.l { text-align: left; }
+td.site { font-weight: 600; }
+td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
+.empty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
+.narrow .opt { display: none; }
+h2 { margin: 0 0 12px; font-size: 17px; font-weight: 500; }
+.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 16px; }
+.defs dl { margin: 0; }
+.defs dt { font-weight: 600; font-size: 14px; }
+.defs dd { margin: 2px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>DXP+ performance tracker</h1>
+    <p class="sub">Per-site performance from the DXP+ performance database. Pick a month, narrow from region to market to brand, then sort any column.</p>
+  </header>
+
+  <div class="card">
+    <div class="source">
+      <div class="source-info" id="source-info">Loading data…</div>
+      <div class="btns"><button class="btn" id="reload">Refresh</button></div>
+    </div>
+    <p class="err" id="err" hidden></p>
+  </div>
+
+  <div class="card" id="table-card" hidden>
+    <div class="filters">
+      <label class="f">Year<select class="in narrow-in" id="f-year"></select></label>
+      <label class="f">Month<select class="in narrow-in" id="f-month"></select></label>
+      <div class="f">Region
+        <div class="seg" role="group" aria-label="Region" id="f-region"></div>
+      </div>
+      <label class="f">Market<select class="in" id="f-market"></select></label>
+      <label class="f">Brand<select class="in" id="f-brand"></select></label>
+      <label class="f">Search<input class="in search" id="f-q" type="search" placeholder="Site, market or brand"></label>
+      <label class="check"><input type="checkbox" id="f-off"> Off target only</label>
+      <button type="button" class="reset" id="f-reset">Reset</button>
+    </div>
+    <div class="meta"><span id="count"></span><span class="legend"><span class="w">Needs improvement</span><span class="b">Poor</span></span></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr id="head"></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden>No sites match these filters.</div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Glossary</h2>
+    <div class="card defs">
+      <dl><dt>Uptime</dt><dd>Share of synthetic checks that returned a healthy page. 99.9% allows about 43 minutes of downtime a month.</dd></dl>
+      <dl><dt>Apdex (Application Performance Index)</dt><dd>User satisfaction with response time, from 0 to 1: (satisfied + tolerating ÷ 2) ÷ all requests, against a threshold T. 0.94+ excellent, 0.85–0.93 good, 0.70–0.84 fair, below 0.70 poor.</dd></dl>
+      <dl><dt>LCP (Largest Contentful Paint)</dt><dd>When the main content becomes visible. Good ≤ 2.5 s, poor &gt; 4 s.</dd></dl>
+      <dl><dt>INP (Interaction to Next Paint)</dt><dd>How quickly the page responds to taps and clicks. Good ≤ 200 ms, poor &gt; 500 ms.</dd></dl>
+      <dl><dt>CLS (Cumulative Layout Shift)</dt><dd>How much the layout jumps while loading. Good ≤ 0.1, poor &gt; 0.25.</dd></dl>
+      <dl><dt>TTFB (Time to First Byte)</dt><dd>How long the server or CDN takes to start responding. Good ≤ 800 ms, poor &gt; 1,800 ms.</dd></dl>
+      <dl><dt>p75 and Core Web Vitals</dt><dd>LCP, INP and CLS are Google's Core Web Vitals, measured on real visits. p75 means 75% of page loads were at least this good.</dd></dl>
+    </div>
+  </section>
+</div>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  const CFG = window.TRACKER_CONFIG || {};
+  const COLS = [
+    { k: 'site', label: 'Site', cls: 'l site' },
+    { k: 'region', label: 'Region', cls: 'l opt' },
+    { k: 'market', label: 'Market', cls: 'l opt' },
+    { k: 'uptime', db: 'uptime_pct', label: 'Uptime', note: '≥ 99.9%', t: [99.9, 99.5, true], f: (v) => v.toFixed(2) + '%' },
+    { k: 'apdex', db: 'apdex', label: 'Apdex', note: '≥ 0.85', t: [0.85, 0.7, true], f: (v) => v.toFixed(2) },
+    { k: 'lcp', db: 'lcp_s', label: 'LCP', note: '≤ 2.5 s', t: [2.5, 4, false], f: (v) => v.toFixed(2) + ' s' },
+    { k: 'inp', db: 'inp_ms', label: 'INP', note: '≤ 200 ms', t: [200, 500, false], f: (v) => Math.round(v).toLocaleString('en') + ' ms' },
+    { k: 'cls', db: 'cls', label: 'CLS', note: '≤ 0.1', t: [0.1, 0.25, false], f: (v) => v.toFixed(2) },
+    { k: 'ttfb', db: 'ttfb_ms', label: 'TTFB', note: '≤ 800 ms', cls: 'opt', t: [800, 1800, false], f: (v) => Math.round(v).toLocaleString('en') + ' ms' },
+    { k: 'sessions', db: 'sessions', label: 'Sessions', note: 'month', cls: 'opt', f: (v) => Math.round(v).toLocaleString('en') },
+  ];
+  const TEXT = new Set(['site', 'region', 'market', 'brand']);
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const $ = (id) => document.getElementById(id);
+
+  let rows = [];
+  let sort = { k: 'apdex', asc: true };
+  const st = { year: null, month: null, region: '', market: '', brand: '', q: '', off: false };
+
+  const level = (c, v) => {
+    if (!c.t || v == null) return '';
+    const [w, b, up] = c.t;
+    if (up) return v < b ? 'bad' : v < w ? 'warn' : '';
+    return v > b ? 'bad' : v > w ? 'warn' : '';
+  };
+  const offTarget = (r) => COLS.some((c) => level(c, r[c.k]) !== '');
+  const num = (v) => (v == null || v === '' || isNaN(Number(v)) ? null : Number(v));
+
+  // ---------- reading Supabase ----------
+  const FIELDS = 'year,month,region,market,brand,site,uptime_pct,apdex,lcp_s,inp_ms,cls,ttfb_ms,sessions,created_at';
+  async function fetchAll() {
+    const base = String(CFG.supabaseUrl || '').replace(/\/$/, '') + '/rest/v1/' + (CFG.table || 'performance_data');
+    const page = 1000, out = [];
+    for (let from = 0; ; from += page) {
+      const url = base + '?select=' + FIELDS + '&order=year.asc,month.asc,site.asc&limit=' + page + '&offset=' + from;
+      const res = await fetch(url, { headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + CFG.supabaseKey }, cache: 'no-store' });
+      if (!res.ok) {
+        let msg = 'HTTP ' + res.status;
+        try { const j = await res.json(); if (j && j.message) msg += ': ' + j.message; } catch (e) {}
+        throw new Error(msg);
+      }
+      const batch = await res.json();
+      out.push(...batch);
+      if (batch.length < page) break;
+    }
+    return out;
+  }
+
+  async function load() {
+    $('err').hidden = true;
+    $('reload').disabled = true;
+    try {
+      if (!CFG.supabaseUrl || !CFG.supabaseKey) throw new Error('config.js is missing the Supabase URL or key');
+      const raw = await fetchAll();
+      let latest = 0;
+      rows = raw.map((r) => {
+        const o = { site: r.site || '', region: r.region || '', market: r.market || '', brand: r.brand || '', y: num(r.year), m: num(r.month) };
+        COLS.forEach((c) => { if (c.db) o[c.k] = num(r[c.db]); });
+        const t = Date.parse(r.created_at || ''); if (t > latest) latest = t;
+        return o;
+      }).filter((o) => o.site);
+      const nSites = new Set(rows.map((r) => r.site)).size;
+      const nMonths = new Set(rows.filter((r) => r.y != null && r.m != null).map((r) => r.y * 100 + r.m)).size;
+      const when = latest ? new Date(latest).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      $('source-info').innerHTML = '';
+      const b = document.createElement('b'); b.textContent = 'Supabase';
+      $('source-info').append(b, ' · ' + nSites + ' sites · ' + nMonths + ' months' + (when ? ' · last row added ' + when : ''));
+      if (!rows.length) { $('source-info').append(' · no data yet'); $('table-card').hidden = true; return; }
+      $('table-card').hidden = false;
+      if (st.region && !rows.some((r) => r.region === st.region)) Object.assign(st, { region: '', market: '', brand: '' });
+      const keep = st.year != null && rows.some((r) => r.y === st.year && r.m === st.month);
+      if (!keep) setLatest();
+      draw();
+    } catch (e) {
+      $('source-info').textContent = 'Could not load data.';
+      $('err').textContent = 'Could not read from Supabase (' + e.message + ').';
+      $('err').hidden = false;
+    } finally {
+      $('reload').disabled = false;
+    }
+  }
+  $('reload').addEventListener('click', load);
+
+  // ---------- table ----------
+  const shown = COLS.filter((c) => c.k !== 'market');
+  $('head').innerHTML = '';
+  shown.forEach((c) => {
+    const th = document.createElement('th');
+    if (c.cls) th.className = c.cls.replace('site', '').trim();
+    const b = document.createElement('button'); b.type = 'button'; b.dataset.k = c.k; b.textContent = c.label;
+    const s = document.createElement('small'); s.innerHTML = c.note || '&nbsp;';
+    th.append(b, s); $('head').appendChild(th);
+  });
+  $('head').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-k]'); if (!b) return;
+    const k = b.dataset.k, c = COLS.find((x) => x.k === k);
+    if (sort.k === k) sort.asc = !sort.asc; else sort = { k, asc: c.t ? c.t[2] : k !== 'sessions' };
+    draw();
+  });
+  $('f-region').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    Object.assign(st, { region: b.dataset.r, market: '', brand: '' }); draw();
+  });
+  $('f-market').addEventListener('change', (e) => { st.market = e.target.value; st.brand = ''; draw(); });
+  $('f-brand').addEventListener('change', (e) => { st.brand = e.target.value; draw(); });
+  $('f-q').addEventListener('input', (e) => { st.q = e.target.value.trim().toLowerCase(); draw(); });
+  $('f-off').addEventListener('change', (e) => { st.off = e.target.checked; draw(); });
+  $('f-reset').addEventListener('click', () => {
+    Object.assign(st, { region: '', market: '', brand: '', q: '', off: false }); setLatest();
+    $('f-q').value = ''; sort = { k: 'apdex', asc: true }; draw();
+  });
+
+  const hasPeriod = () => rows.some((r) => r.y != null && r.m != null);
+  function setLatest() {
+    const p = rows.filter((r) => r.y != null && r.m != null).map((r) => r.y * 100 + r.m);
+    if (!p.length) { st.year = null; st.month = null; return; }
+    const max = Math.max(...p); st.year = Math.floor(max / 100); st.month = max % 100;
+  }
+  $('f-year').addEventListener('change', (e) => {
+    st.year = Number(e.target.value);
+    const ms = [...new Set(rows.filter((r) => r.y === st.year && r.m != null).map((r) => r.m))].sort((a, b) => a - b);
+    if (!ms.includes(st.month)) st.month = ms[ms.length - 1] ?? null;
+    draw();
+  });
+  $('f-month').addEventListener('change', (e) => { st.month = Number(e.target.value); draw(); });
+
+  function fillSelect(sel, label, values, current) {
+    sel.replaceChildren(new Option(label, ''), ...values.map((v) => new Option(v, v)));
+    sel.value = values.includes(current) ? current : '';
+  }
+
+  function draw() {
+    const timed = hasPeriod();
+    $('f-year').parentElement.hidden = !timed; $('f-month').parentElement.hidden = !timed;
+    let base = rows;
+    if (timed) {
+      const years = [...new Set(rows.map((r) => r.y).filter((y) => y != null))].sort((a, b) => b - a);
+      $('f-year').replaceChildren(...years.map((y) => new Option(String(y), String(y))));
+      $('f-year').value = String(st.year);
+      const ms = [...new Set(rows.filter((r) => r.y === st.year && r.m != null).map((r) => r.m))].sort((a, b) => b - a);
+      $('f-month').replaceChildren(...ms.map((m) => new Option(MONTHS[m - 1], String(m))));
+      $('f-month').value = String(st.month);
+      base = rows.filter((r) => r.y === st.year && r.m === st.month);
+    }
+    const regions = [...new Set(base.map((r) => r.region).filter(Boolean))].sort();
+    const seg = $('f-region');
+    seg.replaceChildren(...[''].concat(regions).map((r) => {
+      const b = document.createElement('button'); b.type = 'button'; b.dataset.r = r; b.textContent = r || 'All';
+      b.setAttribute('aria-pressed', String(r === st.region)); return b;
+    }));
+    const inRegion = base.filter((r) => !st.region || r.region === st.region);
+    fillSelect($('f-market'), 'All markets', [...new Set(inRegion.map((r) => r.market).filter(Boolean))].sort(), st.market);
+    st.market = $('f-market').value;
+    const inMarket = inRegion.filter((r) => !st.market || r.market === st.market);
+    fillSelect($('f-brand'), 'All brands', [...new Set(inMarket.map((r) => r.brand).filter(Boolean))].sort(), st.brand);
+    st.brand = $('f-brand').value;
+    $('f-off').checked = st.off;
+
+    let list = inMarket.filter((r) => !st.brand || r.brand === st.brand);
+    if (st.q) list = list.filter((r) => [r.site, r.market, r.brand, r.region].join(' ').toLowerCase().includes(st.q));
+    if (st.off) list = list.filter(offTarget);
+    const k = sort.k, txt = TEXT.has(k);
+    list = [...list].sort((a, b) => {
+      if (!txt) {
+        if (a[k] == null && b[k] == null) return 0;
+        if (a[k] == null) return 1; if (b[k] == null) return -1;
+      }
+      const c = txt ? String(a[k]).localeCompare(String(b[k])) : a[k] - b[k];
+      return sort.asc ? c : -c;
+    });
+
+    const card = $('table-card');
+    card.classList.toggle('narrow', card.clientWidth < 760);
+    $('head').querySelectorAll('th').forEach((th) => {
+      const kk = th.querySelector('button').dataset.k;
+      if (kk === sort.k) th.setAttribute('aria-sort', sort.asc ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort');
+    });
+    $('count').textContent = list.length + ' of ' + base.length + ' sites' + (timed ? ' · ' + MONTHS[st.month - 1] + ' ' + st.year : '');
+    $('empty').hidden = list.length > 0;
+    $('body').replaceChildren(...list.map((r) => {
+      const tr = document.createElement('tr');
+      shown.forEach((c) => {
+        const td = document.createElement('td');
+        const v = r[c.k];
+        const cl = [c.cls || '', level(c, v)].join(' ').trim();
+        if (cl) td.className = cl;
+        td.textContent = v == null || v === '' ? '' : c.f ? c.f(v) : v;
+        tr.appendChild(td);
+      });
+      return tr;
+    }));
+  }
+  window.addEventListener('resize', () => { if (rows.length) draw(); });
+  load();
+})();
+</script>
+</body>
+</html>
