@@ -26,15 +26,9 @@ body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sa
 h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; }
 .sub { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; min-width: 0; }
-.source { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between; }
-.source-info { font-size: 13px; color: var(--muted); }
-.source-info b { color: var(--fg); font-weight: 600; }
-.btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn { font: inherit; font-size: 13px; border-radius: 8px; padding: 7px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
 .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .btn[hidden] { display: none; }
-.drop { border: 1.5px dashed var(--line); border-radius: var(--radius); padding: 40px 16px; text-align: center; color: var(--muted); font-size: 14px; }
-.drop.over, body.over .drop { border-color: var(--fg); color: var(--fg); }
 .err { color: var(--bad); font-size: 13px; margin: 8px 0 0; }
 .filters { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 16px; }
 .f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
@@ -64,27 +58,43 @@ td.site { font-weight: 600; }
 td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
 .empty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
 .narrow .opt { display: none; }
-h2 { margin: 0 0 12px; font-size: 17px; font-weight: 500; }
-.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 16px; }
-.defs dl { margin: 0; }
-.defs dt { font-weight: 600; font-size: 14px; }
-.defs dd { margin: 2px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.refresh { display: inline-flex; align-items: center; gap: 6px; flex: none; margin-top: 4px; }
+.refresh:disabled { opacity: .6; cursor: default; }
+.refresh:disabled svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .refresh:disabled svg { animation: none; } }
+.loading { margin: 0; font-size: 13px; color: var(--muted); }
+.loading[hidden], .err[hidden] { display: none; }
+.err { margin: -12px 0 0; }
+.gloss h2 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.gloss-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.gloss-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.gloss-table th { position: static; text-align: left; font-weight: 500; color: var(--muted); padding: 8px 12px; background: none; }
+.gloss-table td { text-align: left; white-space: normal; padding: 8px 12px; vertical-align: top; color: var(--muted); line-height: 1.45; }
+.gloss-table tr:last-child td { border-bottom: 0; }
+.gloss-table td:first-child { color: var(--fg); white-space: nowrap; width: 1%; }
+.gloss-table td:first-child span { display: block; font-size: 11px; color: var(--muted); }
+.gloss-table td:nth-child(3), .gloss-table td:nth-child(4) { white-space: nowrap; width: 1%; font-variant-numeric: tabular-nums; }
+.gloss-table td:nth-child(3) { color: var(--ok); } .gloss-table td:nth-child(4) { color: var(--bad); }
+.gloss-note { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+@media (max-width: 600px) { .gloss-table td:first-child span { display: none; } .gloss-table th, .gloss-table td { padding: 8px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>DXP+ performance tracker</h1>
-    <p class="sub">Per-site performance from the DXP+ performance database. Pick a month, narrow from region to market to brand, then sort any column.</p>
-  </header>
-
-  <div class="card">
-    <div class="source">
-      <div class="source-info" id="source-info">Loading data…</div>
-      <div class="btns"><button class="btn" id="reload">Refresh</button></div>
+  <header class="top">
+    <div>
+      <h1>DXP+ performance tracker</h1>
+      <p class="sub">Pick a month, narrow from region to market to brand, then sort any column.</p>
     </div>
-    <p class="err" id="err" hidden></p>
-  </div>
+    <button class="btn refresh" id="reload" type="button" aria-label="Refresh data">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Refresh</span>
+    </button>
+  </header>
+  <p class="err" id="err" hidden></p>
+  <p class="loading" id="loading">Loading data…</p>
 
   <div class="card" id="table-card" hidden>
     <div class="filters">
@@ -109,17 +119,22 @@ h2 { margin: 0 0 12px; font-size: 17px; font-weight: 500; }
     </div>
   </div>
 
-  <section>
+  <section class="gloss" id="glossary">
     <h2>Glossary</h2>
-    <div class="card defs">
-      <dl><dt>Uptime</dt><dd>Share of synthetic checks that returned a healthy page. 99.9% allows about 43 minutes of downtime a month.</dd></dl>
-      <dl><dt>Apdex (Application Performance Index)</dt><dd>User satisfaction with response time, from 0 to 1: (satisfied + tolerating ÷ 2) ÷ all requests, against a threshold T. 0.94+ excellent, 0.85–0.93 good, 0.70–0.84 fair, below 0.70 poor.</dd></dl>
-      <dl><dt>LCP (Largest Contentful Paint)</dt><dd>When the main content becomes visible. Good ≤ 2.5 s, poor &gt; 4 s.</dd></dl>
-      <dl><dt>INP (Interaction to Next Paint)</dt><dd>How quickly the page responds to taps and clicks. Good ≤ 200 ms, poor &gt; 500 ms.</dd></dl>
-      <dl><dt>CLS (Cumulative Layout Shift)</dt><dd>How much the layout jumps while loading. Good ≤ 0.1, poor &gt; 0.25.</dd></dl>
-      <dl><dt>TTFB (Time to First Byte)</dt><dd>How long the server or CDN takes to start responding. Good ≤ 800 ms, poor &gt; 1,800 ms.</dd></dl>
-      <dl><dt>p75 and Core Web Vitals</dt><dd>LCP, INP and CLS are Google's Core Web Vitals, measured on real visits. p75 means 75% of page loads were at least this good.</dd></dl>
+    <div class="gloss-wrap">
+      <table class="gloss-table">
+        <thead><tr><th>Metric</th><th>What it measures</th><th>Good</th><th>Poor</th></tr></thead>
+        <tbody>
+          <tr><td><b>Uptime</b></td><td>Share of checks where the site responded correctly. 99.9% is about 43 minutes of downtime a month.</td><td>≥ 99.9%</td><td>&lt; 99.5%</td></tr>
+          <tr><td><b>Apdex</b><span>Application Performance Index</span></td><td>User satisfaction with response time, from 0 to 1.</td><td>≥ 0.85</td><td>&lt; 0.70</td></tr>
+          <tr><td><b>LCP</b><span>Largest Contentful Paint</span></td><td>When the main content becomes visible.</td><td>≤ 2.5 s</td><td>&gt; 4 s</td></tr>
+          <tr><td><b>INP</b><span>Interaction to Next Paint</span></td><td>How quickly the page reacts to taps and clicks.</td><td>≤ 200 ms</td><td>&gt; 500 ms</td></tr>
+          <tr><td><b>CLS</b><span>Cumulative Layout Shift</span></td><td>How much the layout jumps while loading.</td><td>≤ 0.1</td><td>&gt; 0.25</td></tr>
+          <tr><td><b>TTFB</b><span>Time to First Byte</span></td><td>How long the server or CDN takes to start responding.</td><td>≤ 800 ms</td><td>&gt; 1,800 ms</td></tr>
+        </tbody>
+      </table>
     </div>
+    <p class="gloss-note">LCP, INP and CLS are Google's Core Web Vitals, measured on real visits at the 75th percentile (75% of page loads were at least this good).</p>
   </section>
 </div>
 
@@ -192,17 +207,16 @@ h2 { margin: 0 0 12px; font-size: 17px; font-weight: 500; }
       const nSites = new Set(rows.map((r) => r.site)).size;
       const nMonths = new Set(rows.filter((r) => r.y != null && r.m != null).map((r) => r.y * 100 + r.m)).size;
       const when = latest ? new Date(latest).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-      $('source-info').innerHTML = '';
-      const b = document.createElement('b'); b.textContent = 'Supabase';
-      $('source-info').append(b, ' · ' + nSites + ' sites · ' + nMonths + ' months' + (when ? ' · last row added ' + when : ''));
-      if (!rows.length) { $('source-info').append(' · no data yet'); $('table-card').hidden = true; return; }
+      $('reload').title = nSites + ' sites · ' + nMonths + ' months' + (when ? ' · last row added ' + when : '');
+      $('loading').hidden = rows.length > 0;
+      if (!rows.length) { $('loading').textContent = 'No data yet.'; $('table-card').hidden = true; return; }
       $('table-card').hidden = false;
       if (st.region && !rows.some((r) => r.region === st.region)) Object.assign(st, { region: '', market: '', brand: '' });
       const keep = st.year != null && rows.some((r) => r.y === st.year && r.m === st.month);
       if (!keep) setLatest();
       draw();
     } catch (e) {
-      $('source-info').textContent = 'Could not load data.';
+      $('loading').hidden = true;
       $('err').textContent = 'Could not read from Supabase (' + e.message + ').';
       $('err').hidden = false;
     } finally {
