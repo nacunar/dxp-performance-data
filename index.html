@@ -152,7 +152,6 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     { k: 'inp', db: 'inp_ms', label: 'INP', note: '≤ 200 ms', t: [200, 500, false], f: (v) => Math.round(v).toLocaleString('en') + ' ms' },
     { k: 'cls', db: 'cls', label: 'CLS', note: '≤ 0.1', t: [0.1, 0.25, false], f: (v) => v.toFixed(2) },
     { k: 'ttfb', db: 'ttfb_ms', label: 'TTFB', note: '≤ 800 ms', cls: 'opt', t: [800, 1800, false], f: (v) => Math.round(v).toLocaleString('en') + ' ms' },
-    { k: 'sessions', db: 'sessions', label: 'Sessions', note: 'month', cls: 'opt', f: (v) => Math.round(v).toLocaleString('en') },
   ];
   const TEXT = new Set(['site', 'region', 'market', 'brand']);
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -172,7 +171,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   const num = (v) => (v == null || v === '' || isNaN(Number(v)) ? null : Number(v));
 
   // ---------- reading Supabase ----------
-  const FIELDS = 'year,month,region,market,brand,site,uptime_pct,apdex,lcp_s,inp_ms,cls,ttfb_ms,sessions,created_at';
+  const FIELDS = 'year,month,region,market,brand,site,uptime_pct,apdex,lcp_s,inp_ms,cls,ttfb_ms,created_at';
   async function fetchAll() {
     const base = String(CFG.supabaseUrl || '').replace(/\/$/, '') + '/rest/v1/' + (CFG.table || 'performance_data');
     const page = 1000, out = [];
@@ -238,7 +237,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   $('head').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-k]'); if (!b) return;
     const k = b.dataset.k, c = COLS.find((x) => x.k === k);
-    if (sort.k === k) sort.asc = !sort.asc; else sort = { k, asc: c.t ? c.t[2] : k !== 'sessions' };
+    if (sort.k === k) sort.asc = !sort.asc; else sort = { k, asc: c.t ? c.t[2] : true };
     draw();
   });
   $('f-region').addEventListener('click', (e) => {
