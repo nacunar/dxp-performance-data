@@ -24,6 +24,8 @@ In Supabase, Table Editor:
    migration happened and the tracker marks that month as partial.
    Decimals may use `,` or `.`; month can be a number or a name (Sep, September, septiembre).
 3. Each row is converted and saved to `performance_data`. Importing the same site and month again updates it.
+   Editing a row in `performance_import` updates the tracker, and deleting it removes that site and month from the tracker.
+   Always fix or delete data in `performance_import`, not in `performance_data`.
 4. Click **Refresh** on the tracker.
 
 ## Deploy
