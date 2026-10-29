@@ -55,6 +55,11 @@ h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; }
 .legend { display: flex; gap: 16px; }
 .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; background: currentColor; }
 .legend .w { color: var(--warn); } .legend .b { color: var(--bad); }
+.legend .p { color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.legend .p::before { display: none; }
+.mig { display: inline-block; font-style: normal; font-size: 11px; font-weight: 500; line-height: 1; padding: 3px 6px; border-radius: 999px; color: var(--accent2, #2f5fb3); background: color-mix(in srgb, currentColor 12%, transparent); vertical-align: 1px; white-space: nowrap; }
+td .mig { margin-left: 8px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mig { color: #8fb3f0; } }
 .tablewrap { max-height: 36rem; overflow: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 th { position: sticky; top: 0; z-index: 1; background: var(--panel); text-align: right; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line); padding: 0; white-space: nowrap; }
@@ -115,9 +120,10 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       <div class="f"><span id="l-brand">Brand</span><div class="ms" id="f-brand"></div></div>
       <label class="f">Search<input class="in search" id="f-q" type="search" placeholder="Site, market or brand"></label>
       <label class="check"><input type="checkbox" id="f-off"> Off target only</label>
+      <label class="check"><input type="checkbox" id="f-mig"> Hide partial months</label>
       <button type="button" class="reset" id="f-reset">Reset</button>
     </div>
-    <div class="meta"><span id="count"></span><span class="legend"><span class="w">Needs improvement</span><span class="b">Poor</span></span></div>
+    <div class="meta"><span id="count"></span><span class="legend"><span class="w">Needs improvement</span><span class="b">Poor</span><span class="p"><i class="mig">Migrated</i> Partial month</span></span></div>
     <div class="tablewrap">
       <table>
         <thead><tr id="head"></tr></thead>
@@ -143,6 +149,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       </table>
     </div>
     <p class="gloss-note">LCP, INP and CLS are measured at the 75th percentile, Google's recommended Core Web Vitals KPI.</p>
+    <p class="gloss-note"><i class="mig">Migrated</i> marks a site that moved to DXP+ during that month, so its figures mix the old and new site. The first full month on DXP+ is the one to compare.</p>
   </section>
 </div>
 
@@ -167,7 +174,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
 
   let rows = [];
   let sort = { k: 'apdex', asc: true };
-  const st = { year: null, month: null, regions: new Set(), markets: new Set(), brands: new Set(), q: '', off: false };
+  const st = { year: null, month: null, regions: new Set(), markets: new Set(), brands: new Set(), q: '', off: false, hideMig: false };
 
   const level = (c, v) => {
     if (!c.t || v == null) return '';
@@ -179,7 +186,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   const num = (v) => (v == null || v === '' || isNaN(Number(v)) ? null : Number(v));
 
   // ---------- reading Supabase ----------
-  const FIELDS = 'year,month,region,market,brand,site,uptime_pct,apdex,lcp_s,inp_ms,cls,ttfb_ms,created_at';
+  const FIELDS = 'year,month,region,market,brand,site,uptime_pct,apdex,lcp_s,inp_ms,cls,ttfb_ms,migrated_on,created_at';
   async function fetchAll() {
     const base = String(CFG.supabaseUrl || '').replace(/\/$/, '') + '/rest/v1/' + (CFG.table || 'performance_data');
     const page = 1000, out = [];
@@ -207,6 +214,8 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       let latest = 0;
       rows = raw.map((r) => {
         const o = { site: r.site || '', region: r.region || '', market: r.market || '', brand: r.brand || '', y: num(r.year), m: num(r.month) };
+        const mg = /^(\d{4})-(\d{2})-(\d{2})/.exec(r.migrated_on || '');
+        if (mg && Number(mg[1]) === o.y && Number(mg[2]) === o.m) o.migDay = Number(mg[3]);
         COLS.forEach((c) => { if (c.db) o[c.k] = num(r[c.db]); });
         const t = Date.parse(r.created_at || ''); if (t > latest) latest = t;
         return o;
@@ -316,8 +325,9 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   const msBrand = multiSelect($('f-brand'), 'brand', 'l-brand', (v) => { st.brands = v; draw(); });
   $('f-q').addEventListener('input', (e) => { st.q = e.target.value.trim().toLowerCase(); draw(); });
   $('f-off').addEventListener('change', (e) => { st.off = e.target.checked; draw(); });
+  $('f-mig').addEventListener('change', (e) => { st.hideMig = e.target.checked; draw(); });
   $('f-reset').addEventListener('click', () => {
-    Object.assign(st, { regions: new Set(), markets: new Set(), brands: new Set(), q: '', off: false }); setLatest();
+    Object.assign(st, { regions: new Set(), markets: new Set(), brands: new Set(), q: '', off: false, hideMig: false }); setLatest();
     $('f-q').value = ''; sort = { k: 'apdex', asc: true }; draw();
   });
 
@@ -359,10 +369,13 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     const inMarket = inRegion.filter((r) => !st.markets.size || st.markets.has(r.market));
     st.brands = msBrand.set([...new Set(inMarket.map((r) => r.brand).filter(Boolean))].sort(), st.brands);
     $('f-off').checked = st.off;
+    $('f-mig').checked = st.hideMig;
 
     let list = inMarket.filter((r) => !st.brands.size || st.brands.has(r.brand));
     if (st.q) list = list.filter((r) => [r.site, r.market, r.brand, r.region].join(' ').toLowerCase().includes(st.q));
     if (st.off) list = list.filter(offTarget);
+    const nMig = list.filter((r) => r.migDay).length;
+    if (st.hideMig) list = list.filter((r) => !r.migDay);
     const k = sort.k, txt = TEXT.has(k);
     list = [...list].sort((a, b) => {
       if (!txt) {
@@ -379,7 +392,8 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       const kk = th.querySelector('button').dataset.k;
       if (kk === sort.k) th.setAttribute('aria-sort', sort.asc ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort');
     });
-    $('count').textContent = list.length + ' of ' + base.length + ' sites' + (timed ? ' · ' + MONTHS[st.month - 1] + ' ' + st.year : '');
+    $('count').textContent = list.length + ' of ' + base.length + ' sites' + (timed ? ' · ' + MONTHS[st.month - 1] + ' ' + st.year : '') +
+      (nMig ? ' · ' + nMig + ' partial month' + (nMig > 1 ? 's' : '') + (st.hideMig ? ' hidden' : '') : '');
     $('empty').hidden = list.length > 0;
     $('body').replaceChildren(...list.map((r) => {
       const tr = document.createElement('tr');
@@ -389,6 +403,13 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
         const cl = [c.cls || '', level(c, v)].join(' ').trim();
         if (cl) td.className = cl;
         td.textContent = v == null || v === '' ? '' : c.f ? c.f(v) : v;
+        if (c.k === 'site' && r.migDay) {
+          const b = document.createElement('i'); b.className = 'mig';
+          const d = r.migDay + ' ' + MONTHS[r.m - 1];
+          b.textContent = 'Migrated ' + d;
+          b.title = 'Partial month: moved to DXP+ on ' + d + ' ' + r.y + '. Figures mix the old and new site.';
+          td.appendChild(b);
+        }
         tr.appendChild(td);
       });
       return tr;

@@ -19,7 +19,9 @@ In Supabase, Table Editor:
 
 1. Open **`performance_import`** (not `performance_data`).
 2. **Insert → Import data from CSV**, or add rows by hand.
-   Columns: `year, month, region, market, brand, site, uptime_pct, apdex, lcp_s, inp_ms, cls, ttfb_ms, sessions`.
+   Columns: `year, month, region, market, brand, site, uptime_pct, apdex, lcp_s, inp_ms, cls, ttfb_ms, sessions, migrated_on`.
+   `migrated_on` is optional: the date a site moved to DXP+ (2026-10-14 or 14/10/2026). Fill it on the row for the month the
+   migration happened and the tracker marks that month as partial.
    Decimals may use `,` or `.`; month can be a number or a name (Sep, September, septiembre).
 3. Each row is converted and saved to `performance_data`. Importing the same site and month again updates it.
 4. Click **Refresh** on the tracker.
