@@ -62,6 +62,7 @@ td .mig { margin-left: 8px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mig { color: #8fb3f0; } }
 .tablewrap { max-height: 36rem; overflow: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th.num { width: 7.5rem; } /* metric columns share one width; Site and Region take the rest */
 th { position: sticky; top: 0; z-index: 1; background: var(--panel); text-align: right; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line); padding: 0; white-space: nowrap; }
 th button { font: inherit; color: inherit; background: none; border: 0; padding: 6px 8px 0; cursor: pointer; width: 100%; text-align: inherit; }
 th[aria-sort] button { color: var(--fg); }
@@ -246,7 +247,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   $('head').innerHTML = '';
   shown.forEach((c) => {
     const th = document.createElement('th');
-    if (c.cls) th.className = c.cls.replace('site', '').trim();
+    th.className = [(c.cls || '').replace('site', ''), c.f ? 'num' : ''].join(' ').trim();
     const b = document.createElement('button'); b.type = 'button'; b.dataset.k = c.k; b.textContent = c.label;
     const s = document.createElement('small'); s.innerHTML = c.note || '&nbsp;';
     th.append(b, s); $('head').appendChild(th);
