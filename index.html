@@ -188,7 +188,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   // ---------- reading Supabase ----------
   const FIELDS = 'year,month,region,market,brand,site,uptime_pct,apdex,lcp_s,inp_ms,cls,ttfb_ms,migrated_on,created_at';
   async function fetchAll() {
-    const base = String(CFG.supabaseUrl || '').replace(/\/$/, '') + '/rest/v1/' + (CFG.table || 'performance_data');
+    const base = String(CFG.supabaseUrl || '').replace(/\/$/, '') + '/rest/v1/' + (CFG.table || 'performance_tracker');
     const page = 1000, out = [];
     for (let from = 0; ; from += page) {
       const url = base + '?select=' + FIELDS + '&order=year.asc,month.asc,site.asc&limit=' + page + '&offset=' + from;
