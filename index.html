@@ -140,7 +140,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
         <thead><tr><th>Metric</th><th>What it measures</th><th>Good</th><th>Poor</th></tr></thead>
         <tbody>
           <tr><td><b>Uptime</b></td><td>Share of checks where the site responded correctly. 99.9% is about 43 minutes of downtime a month.</td><td>≥ 99.9%</td><td>&lt; 99.5%</td></tr>
-          <tr><td><b>Apdex</b><span>Application Performance Index</span></td><td>User satisfaction with response time, from 0 to 1.</td><td>≥ 0.85</td><td>&lt; 0.70</td></tr>
+          <tr data-metric="apdex" hidden><td><b>Apdex</b><span>Application Performance Index</span></td><td>User satisfaction with response time, from 0 to 1.</td><td>≥ 0.85</td><td>&lt; 0.70</td></tr>
           <tr><td><b>LCP</b><span>Largest Contentful Paint</span></td><td>When the main content becomes visible.</td><td>≤ 2.5 s</td><td>&gt; 4 s</td></tr>
           <tr><td><b>INP</b><span>Interaction to Next Paint</span></td><td>How quickly the page reacts to taps and clicks.</td><td>≤ 200 ms</td><td>&gt; 500 ms</td></tr>
           <tr><td><b>CLS</b><span>Cumulative Layout Shift</span></td><td>How much the layout jumps while loading.</td><td>≤ 0.1</td><td>&gt; 0.25</td></tr>
@@ -162,7 +162,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     { k: 'region', label: 'Region', cls: 'l opt' },
     { k: 'market', label: 'Market', cls: 'l opt' },
     { k: 'uptime', db: 'uptime_pct', label: 'Uptime', note: '≥ 99.9%', t: [99.9, 99.5, true], f: (v) => v.toFixed(2) + '%' },
-    { k: 'apdex', db: 'apdex', label: 'Apdex', note: '≥ 0.85', t: [0.85, 0.7, true], f: (v) => v.toFixed(2) },
+    { k: 'apdex', db: 'apdex', hidden: true, label: 'Apdex', note: '≥ 0.85', t: [0.85, 0.7, true], f: (v) => v.toFixed(2) },
     { k: 'lcp', db: 'lcp_s', label: 'LCP', note: '≤ 2.5 s', t: [2.5, 4, false], f: (v) => v.toFixed(2) + ' s' },
     { k: 'inp', db: 'inp_ms', label: 'INP', note: '≤ 200 ms', t: [200, 500, false], f: (v) => Math.round(v).toLocaleString('en') + ' ms' },
     { k: 'cls', db: 'cls', label: 'CLS', note: '≤ 0.1', t: [0.1, 0.25, false], f: (v) => v.toFixed(2) },
@@ -173,7 +173,8 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   const $ = (id) => document.getElementById(id);
 
   let rows = [];
-  let sort = { k: 'apdex', asc: true };
+  const DEFAULT_SORT = { k: 'lcp', asc: false }; // worst LCP first
+  let sort = { ...DEFAULT_SORT };
   const st = { year: null, month: null, regions: new Set(), markets: new Set(), brands: new Set(), q: '', off: false, hideMig: false };
 
   const level = (c, v) => {
@@ -182,7 +183,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     if (up) return v < b ? 'bad' : v < w ? 'warn' : '';
     return v > b ? 'bad' : v > w ? 'warn' : '';
   };
-  const offTarget = (r) => COLS.some((c) => level(c, r[c.k]) !== '');
+  const offTarget = (r) => COLS.some((c) => !c.hidden && level(c, r[c.k]) !== '');
   const num = (v) => (v == null || v === '' || isNaN(Number(v)) ? null : Number(v));
 
   // ---------- reading Supabase ----------
@@ -241,7 +242,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   $('reload').addEventListener('click', load);
 
   // ---------- table ----------
-  const shown = COLS.filter((c) => c.k !== 'market');
+  const shown = COLS.filter((c) => c.k !== 'market' && !c.hidden);
   $('head').innerHTML = '';
   shown.forEach((c) => {
     const th = document.createElement('th');
@@ -328,7 +329,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   $('f-mig').addEventListener('change', (e) => { st.hideMig = e.target.checked; draw(); });
   $('f-reset').addEventListener('click', () => {
     Object.assign(st, { regions: new Set(), markets: new Set(), brands: new Set(), q: '', off: false, hideMig: false }); setLatest();
-    $('f-q').value = ''; sort = { k: 'apdex', asc: true }; draw();
+    $('f-q').value = ''; sort = { ...DEFAULT_SORT }; draw();
   });
 
   const hasPeriod = () => rows.some((r) => r.y != null && r.m != null);
