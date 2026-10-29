@@ -50,7 +50,9 @@ h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; }
 .search { width: 14rem; }
 .narrow-in { min-width: 6rem; }
 .check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 0; cursor: pointer; }
-.reset { font: inherit; font-size: 13px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 6px 0; }
+.reset { font: inherit; font-size: 12px; background: none; border: 0; color: var(--fg); text-decoration: underline; cursor: pointer; padding: 0; }
+.reset[hidden] { display: none; }
+.meta-l { display: inline-flex; align-items: baseline; gap: 12px; }
 .meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 16px; }
 .legend { display: flex; gap: 16px; }
 .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; background: currentColor; }
@@ -122,9 +124,8 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       <label class="f">Search<input class="in search" id="f-q" type="search" placeholder="Site, market or brand"></label>
       <label class="check"><input type="checkbox" id="f-off"> Off target only</label>
       <label class="check"><input type="checkbox" id="f-mig"> Hide partial months</label>
-      <button type="button" class="reset" id="f-reset">Reset</button>
     </div>
-    <div class="meta"><span id="count"></span><span class="legend"><span class="w">Needs improvement</span><span class="b">Poor</span><span class="p"><i class="mig">Migrated</i> Partial month</span></span></div>
+    <div class="meta"><span class="meta-l"><span id="count"></span><button type="button" class="reset" id="f-reset" hidden>Clear filters</button></span><span class="legend"><span class="w">Needs improvement</span><span class="b">Poor</span><span class="p"><i class="mig">Migrated</i> Partial month</span></span></div>
     <div class="tablewrap">
       <table>
         <thead><tr id="head"></tr></thead>
@@ -394,6 +395,10 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       const kk = th.querySelector('button').dataset.k;
       if (kk === sort.k) th.setAttribute('aria-sort', sort.asc ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort');
     });
+    const p = rows.filter((r) => r.y != null && r.m != null).map((r) => r.y * 100 + r.m);
+    const latest = p.length ? Math.max(...p) : null;
+    $('f-reset').hidden = !(st.regions.size || st.markets.size || st.brands.size || st.q || st.off || st.hideMig ||
+      (latest != null && st.year * 100 + st.month !== latest));
     $('count').textContent = list.length + ' of ' + base.length + ' sites' + (timed ? ' · ' + MONTHS[st.month - 1] + ' ' + st.year : '') +
       (nMig ? ' · ' + nMig + ' partial month' + (nMig > 1 ? 's' : '') + (st.hideMig ? ' hidden' : '') : '');
     $('empty').hidden = list.length > 0;
