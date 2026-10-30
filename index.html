@@ -125,7 +125,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       <label class="check"><input type="checkbox" id="f-off"> Off target only</label>
       <label class="check"><input type="checkbox" id="f-mig"> Hide partial months</label>
     </div>
-    <div class="meta"><span class="meta-l"><span id="count"></span><button type="button" class="reset" id="f-reset" hidden>Clear filters</button></span><span class="legend"><span class="w">Needs improvement</span><span class="b">Poor</span><span class="p"><i class="mig">Migrated</i> Partial month</span></span></div>
+    <div class="meta"><span class="meta-l"><span id="count"></span><button type="button" class="reset" id="f-reset" hidden>Clear filters</button></span><span class="legend"><span class="w">Needs improvement</span><span class="b">Poor</span><span class="p"><i class="mig">Partial month</i> Migrated to DXP+ that month</span></span></div>
     <div class="tablewrap">
       <table>
         <thead><tr id="head"></tr></thead>
@@ -151,7 +151,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       </table>
     </div>
     <p class="gloss-note">LCP, INP and CLS are measured at the 75th percentile, Google's recommended Core Web Vitals KPI.</p>
-    <p class="gloss-note"><i class="mig">Migrated</i> marks a site that moved to DXP+ during that month, so its figures mix the old and new site. The first full month on DXP+ is the one to compare.</p>
+    <p class="gloss-note"><i class="mig">Partial month</i> marks a site that moved to DXP+ during that month, so its figures mix the old and new site. The first full month on DXP+ is the one to compare.</p>
   </section>
 </div>
 
@@ -413,8 +413,8 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
         if (c.k === 'site' && r.migDay) {
           const b = document.createElement('i'); b.className = 'mig';
           const d = r.migDay + ' ' + MONTHS[r.m - 1];
-          b.textContent = 'Migrated ' + d;
-          b.title = 'Partial month: moved to DXP+ on ' + d + ' ' + r.y + '. Figures mix the old and new site.';
+          b.textContent = 'Partial month';
+          b.title = 'Migrated to DXP+ on ' + d + ' ' + r.y + '. Figures mix the old and new site.';
           td.appendChild(b);
         }
         tr.appendChild(td);
