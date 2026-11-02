@@ -101,7 +101,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
 .site-link { font: inherit; font-weight: 600; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; }
 .site-link:hover, .site-link:focus-visible { text-decoration-color: currentColor; }
 .site-link { display: inline-flex; align-items: center; gap: 6px; }
-.site-link svg { flex: none; color: var(--muted); opacity: .55; transition: opacity .15s, color .15s; }
+.site-link svg { flex: none; color: var(--fg); opacity: 0; transition: opacity .15s; }
 #body tr { cursor: pointer; }
 #body tr:hover td { background: color-mix(in srgb, var(--fg) 4%, transparent); }
 #body tr:hover .site-link { text-decoration-color: currentColor; }
