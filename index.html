@@ -114,7 +114,10 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .scrim, .panel { transition: none; } }
 .panel-head { position: sticky; top: 0; z-index: 1; background: var(--bg); display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 20px 12px; border-bottom: 1px solid var(--line); }
 .panel-head h2 { margin: 0; font-size: 20px; font-weight: 600; }
-.panel-meta { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.panel-meta { margin: 4px 0 0; font-size: 13px; color: var(--muted); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.panel-mig { display: inline-block; font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 999px; color: #2f5fb3; background: color-mix(in srgb, #2f5fb3 12%, transparent); }
+.panel-mig.none { color: var(--muted); background: color-mix(in srgb, var(--fg) 6%, transparent); font-weight: 400; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .panel-mig:not(.none) { color: #8fb3f0; background: color-mix(in srgb, #8fb3f0 14%, transparent); } }
 .panel-close { font: inherit; font-size: 20px; line-height: 1; width: 32px; height: 32px; flex: none; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
 .panel-body { padding: 16px 20px 28px; display: flex; flex-direction: column; gap: 12px; }
 .panel-note { margin: 0; font-size: 12px; color: var(--muted); }
@@ -268,6 +271,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       rows = raw.map((r) => {
         const o = { site: r.site || '', region: r.region || '', market: r.market || '', brand: r.brand || '', y: num(r.year), m: num(r.month) };
         const mg = /^(\d{4})-(\d{2})-(\d{2})/.exec(r.migrated_on || '');
+        if (mg) o.migDate = { y: Number(mg[1]), m: Number(mg[2]), d: Number(mg[3]) };
         if (mg && Number(mg[1]) === o.y && Number(mg[2]) === o.m) o.migDay = Number(mg[3]);
         COLS.forEach((c) => { if (c.db) o[c.k] = num(r[c.db]); });
         const t = Date.parse(r.created_at || ''); if (t > latest) latest = t;
@@ -515,8 +519,12 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     $('panel-title').textContent = site;
     const last = hist[hist.length - 1] || {};
     const mig = hist.find((r) => r.migDay);
-    $('panel-meta').textContent = [last.region, last.market, last.brand].filter(Boolean).join(' · ') +
-      (mig ? ' · migrated to DXP+ ' + mig.migDay + ' ' + MONTHS[mig.m - 1] + ' ' + mig.y : '');
+    const md = (hist.find((r) => r.migDate) || {}).migDate;
+    const meta = $('panel-meta'); meta.replaceChildren();
+    meta.append([last.region, last.market, last.brand].filter(Boolean).join(' · '));
+    const mp = document.createElement('span'); mp.className = 'panel-mig' + (md ? '' : ' none');
+    mp.textContent = md ? 'Migrated to DXP+ on ' + md.d + ' ' + MONTHS[md.m - 1] + ' ' + md.y : 'No migration date recorded';
+    meta.append(mp);
     const body = $('panel-body'); body.replaceChildren();
     if (!hist.length) { body.append(Object.assign(document.createElement('p'), { className: 'panel-note', textContent: 'No data for this site.' })); return; }
     // continuous month axis from first to last month, so gaps stay visible
@@ -559,7 +567,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     const W = Math.max(240, box.clientWidth), H = 120, padL = 44, padR = 10, padT = 10, padB = 22;
     const vals = pts.map((p) => p.v).concat(c.t[0]);
     let lo = Math.min(...vals), hi = Math.max(...vals);
-    if (hi === lo) { const pad = Math.abs(hi) * 0.05 || 1; lo -= pad; hi += pad; }
+    if (hi === lo) { const pad = c.k === 'uptime' ? 0.1 : Math.abs(hi) * 0.1 || 1; lo -= pad; hi += pad; }
     const padV = (hi - lo) * 0.12; lo -= padV; hi += padV;
     if (c.k === 'uptime') hi = Math.min(hi, 100.05);
     if (lo < 0 && Math.min(...vals) >= 0) lo = 0;
