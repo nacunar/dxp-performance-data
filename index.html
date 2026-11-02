@@ -135,9 +135,6 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
 .kpi-chart .line { fill: none; stroke: var(--fg); stroke-width: 1.75; stroke-linejoin: round; stroke-linecap: round; }
 .kpi-chart .target { stroke: var(--ok); stroke-width: 1; stroke-dasharray: 4 3; }
 .kpi-chart .grid { stroke: var(--line); stroke-width: 1; }
-.kpi-chart .partial { fill: currentColor; color: #2f5fb3; opacity: .1; }
-.kpi-chart text.partial-lab { fill: #2f5fb3; font-size: 10px; font-weight: 500; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .kpi-chart .partial { color: #8fb3f0; } :root:not([data-theme="light"]) .kpi-chart text.partial-lab { fill: #8fb3f0; } }
 .kpi-chart .pt { stroke: var(--panel); stroke-width: 2; fill: var(--fg); }
 .kpi-chart .pt.warn { fill: var(--warn); } .kpi-chart .pt.bad { fill: var(--bad); }
 .kpi-tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.12); padding: 4px 8px; font-size: 12px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px)); }
@@ -520,7 +517,6 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     const hist = rows.filter((r) => r.site === site && r.y != null && r.m != null).sort((a, b) => a.y - b.y || a.m - b.m);
     $('panel-title').textContent = site;
     const last = hist[hist.length - 1] || {};
-    const mig = hist.find((r) => r.migDay);
     const md = (hist.find((r) => r.migDate) || {}).migDate;
     const meta = $('panel-meta'); meta.replaceChildren();
     meta.append([last.region, last.market, last.brand].filter(Boolean).join(' · '));
@@ -535,7 +531,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     const byI = new Map(hist.map((r) => [idx(r) - i0, r]));
     const span = n === 1 ? '1 month' : mLabel(hist[0].y, hist[0].m) + ' to ' + mLabel(last.y, last.m) + ' · ' + n + ' months';
     body.append(Object.assign(document.createElement('p'), { className: 'panel-note',
-      textContent: span + '. Dashed line is the target.' + (mig ? ' Shaded month is partial (migration).' : '') + (n === 1 ? ' Trends appear once there is a second month.' : '') }));
+      textContent: span + '. Dashed line is the target.' + (n === 1 ? ' Trends appear once there is a second month.' : '') }));
     COLS.filter((c) => c.t && !c.hidden).forEach((c) => body.append(kpiCard(c, byI, n)));
   }
 
@@ -566,8 +562,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   }
 
   function drawChart(box, c, pts, byI, n) {
-    const hasPartial = [...byI.values()].some((r) => r.migDay);
-    const W = Math.max(240, box.clientWidth), padT = hasPartial ? 22 : 10, H = 110 + padT, padL = 44, padR = 10, padB = 22;
+    const W = Math.max(240, box.clientWidth), H = 120, padL = 44, padR = 10, padT = 10, padB = 22;
     const vals = pts.map((p) => p.v).concat(c.t[0]);
     let lo = Math.min(...vals), hi = Math.max(...vals);
     if (hi === lo) { const pad = c.k === 'uptime' ? 0.1 : Math.abs(hi) * 0.1 || 1; lo -= pad; hi += pad; }
@@ -577,16 +572,6 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     const x = (i) => n === 1 ? padL + (W - padL - padR) / 2 : padL + (i / (n - 1)) * (W - padL - padR);
     const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': c.label + ' by month' });
-    // partial-month band(s)
-    for (let i = 0; i < n; i++) { const r = byI.get(i); if (r && r.migDay) {
-      const half = n === 1 ? 24 : (W - padL - padR) / (n - 1) / 2;
-      const bx0 = Math.max(padL, x(i) - half), bx1 = Math.min(W - padR, x(i) + half);
-      const band = svgEl('rect', { class: 'partial', x: bx0, y: padT - 18, width: bx1 - bx0, height: H - padT - padB + 18, rx: 4 });
-      const tt = svgEl('title', {}); tt.textContent = 'Partial month (migrated ' + r.migDay + ' ' + MONTHS[r.m - 1] + ')'; band.append(tt);
-      svg.append(band);
-      const lab = svgEl('text', { class: 'partial-lab', x: (bx0 + bx1) / 2, y: padT - 6, 'text-anchor': 'middle' }); lab.textContent = 'Partial';
-      svg.append(lab);
-    } }
     // y gridlines at round values
     const ticks = niceTicks(lo, hi, 3), dec = Math.max(0, -Math.floor(Math.log10(ticks.length > 1 ? ticks[1] - ticks[0] : 1)));
     ticks.forEach((v) => {
@@ -621,7 +606,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       let best = pts[0]; pts.forEach((p) => { if (Math.abs(x(p.i) - mx) < Math.abs(x(best.i) - mx)) best = p; });
       tip.replaceChildren();
       const b = document.createElement('b'); b.textContent = c.f(best.v);
-      const sp = document.createElement('span'); sp.textContent = ' · ' + MONTHS[best.r.m - 1] + ' ' + best.r.y + (best.r.migDay ? ' (partial)' : '');
+      const sp = document.createElement('span'); sp.textContent = ' · ' + MONTHS[best.r.m - 1] + ' ' + best.r.y;
       tip.append(b, sp);
       tip.style.left = Math.min(Math.max(x(best.i) * (bx.width / W), 60), bx.width - 60) + 'px';
       tip.style.top = (y(best.v) * (bx.height / H)) + 'px';
