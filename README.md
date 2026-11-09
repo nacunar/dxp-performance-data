@@ -20,8 +20,9 @@ In Supabase, Table Editor:
 1. Open **`performance_import`** (not `performance_data`).
 2. **Insert → Import data from CSV**, or add rows by hand.
    Columns: `year, month, region, market, brand, site, uptime_pct, apdex, lcp_s, ttfb_ms`
-   Response time stages from Site24x7 (ms): `redirect_ms, dns_ms, connection_ms, download_ms, rendering_ms, response_ms`
-   (`ttfb_ms` is the First byte stage.) Optional: `inp_ms, cls, sessions, migrated_on`. Decimals may use `,` or `.`; month can be a number or a name (Sep, September, septiembre).
+   Response time stages from Site24x7 (ms): `redirect_ms, dns_ms, connection_ms, server_ms, download_ms, rendering_ms, response_ms`
+   `rendering_ms` = Site24x7 Document Rendering + Page Rendering. The stages add up to `response_ms` (Overall Response Time).
+   `ttfb_ms` is time to first byte (DNS + Connection + Server), kept separately. Optional: `inp_ms, cls, sessions, migrated_on`. Decimals may use `,` or `.`; month can be a number or a name (Sep, September, septiembre).
 3. Each row is converted and saved to `performance_data`. Importing the same site and month again updates it.
    Editing a row in `performance_import` updates the tracker, and deleting it removes that site and month from the tracker.
    Always fix or delete data in `performance_import`, not in `performance_data`.

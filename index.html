@@ -212,9 +212,9 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
           <tr class="g-stage"><td><b><i class="sw stage-net"></i>Redirect</b><span>Network · infra</span></td><td>Hops before the real page, such as http to https or non-www to www.</td><td>–</td><td>–</td></tr>
           <tr class="g-stage"><td><b><i class="sw stage-net"></i>DNS</b><span>Network · infra</span></td><td>Looking up the site's address.</td><td>–</td><td>–</td></tr>
           <tr class="g-stage"><td><b><i class="sw stage-net"></i>Connection</b><span>Network · infra</span></td><td>Opening the secure connection to the nearest server or CDN edge.</td><td>–</td><td>–</td></tr>
-          <tr class="g-stage"><td><b><i class="sw stage-back"></i>First byte</b><span>TTFB · infra</span></td><td>Waiting for the server or CDN to start sending the page: caching, WAF and server time.</td><td>≤ 800 ms</td><td>&gt; 1,800 ms</td></tr>
+          <tr class="g-stage"><td><b><i class="sw stage-back"></i>Server</b><span>Backend · infra</span></td><td>Waiting for the server or CDN to prepare the page: caching, WAF and server time. Together with DNS and Connection it makes up the time to first byte (TTFB, target ≤ 800 ms).</td><td>–</td><td>–</td></tr>
           <tr class="g-stage"><td><b><i class="sw stage-back"></i>Download</b><span>Backend · infra and dev</span></td><td>Receiving the HTML of the page.</td><td>–</td><td>–</td></tr>
-          <tr class="g-stage"><td><b><i class="sw stage-front"></i>Rendering</b><span>Front-end · dev and markets</span></td><td>Loading and running everything the page pulls in (CSS, scripts, images, tags) until it finishes loading.</td><td>–</td><td>–</td></tr>
+          <tr class="g-stage"><td><b><i class="sw stage-front"></i>Rendering</b><span>Front-end · dev and markets</span></td><td>Loading and running everything the page pulls in (CSS, scripts, images, tags) until it finishes loading. Includes Site24x7's page and document rendering.</td><td>–</td><td>–</td></tr>
           <tr><td><b>Response time</b><span>Total</span></td><td>From the click until the page finishes loading. The stages above add up to it.</td><td>–</td><td>–</td></tr>
         </tbody>
       </table>
@@ -247,12 +247,13 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     { k: 'apdex', db: 'apdex', label: 'Apdex', note: '≥ 0.85', t: [0.85, 0.7, true], f: (v) => v.toFixed(2) },
     { k: 'lcp', db: 'lcp_s', label: 'LCP', note: '≤ 2.5 s', t: [2.5, 4, false], f: (v) => v.toFixed(2) + ' s' },
     { k: 'inp', db: 'inp_ms', hidden: true, label: 'INP', note: '≤ 200 ms', t: [200, 500, false], f: ms },
+    { k: 'ttfb', db: 'ttfb_ms', hidden: true, label: 'TTFB', note: '≤ 800 ms', t: [800, 1800, false], f: ms },
     { k: 'cls', db: 'cls', hidden: true, label: 'CLS', note: '≤ 0.1', t: [0.1, 0.25, false], f: (v) => v.toFixed(2) },
     // response time breakdown (Site24x7 RUM stages), in the order they happen
     { k: 'redirect', db: 'redirect_ms', stage: 'net', label: 'Redirect', f: ms, tf: msShort },
     { k: 'dns', db: 'dns_ms', stage: 'net', label: 'DNS', f: ms, tf: msShort },
     { k: 'connection', db: 'connection_ms', stage: 'net', label: 'Connection', f: ms, tf: msShort },
-    { k: 'ttfb', db: 'ttfb_ms', stage: 'back', label: 'First byte', note: '≤ 800', t: [800, 1800, false], f: ms, tf: msShort },
+    { k: 'server', db: 'server_ms', stage: 'back', label: 'Server', f: ms, tf: msShort },
     { k: 'download', db: 'download_ms', stage: 'back', label: 'Download', f: ms, tf: msShort },
     { k: 'rendering', db: 'rendering_ms', stage: 'front', label: 'Rendering', f: ms, tf: msShort },
     { k: 'response', db: 'response_ms', total: true, label: 'Response time', note: 'total', f: (v) => (v / 1000).toFixed(2) + ' s' },
@@ -277,7 +278,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   const num = (v) => (v == null || v === '' || isNaN(Number(v)) ? null : Number(v));
 
   // ---------- reading Supabase ----------
-  const FIELDS = 'year,month,region,market,brand,site,uptime_pct,apdex,lcp_s,inp_ms,cls,ttfb_ms,redirect_ms,dns_ms,connection_ms,download_ms,rendering_ms,response_ms,migrated_on,created_at';
+  const FIELDS = 'year,month,region,market,brand,site,uptime_pct,apdex,lcp_s,inp_ms,cls,ttfb_ms,redirect_ms,dns_ms,connection_ms,server_ms,download_ms,rendering_ms,response_ms,migrated_on,created_at';
   async function fetchAll() {
     const base = String(CFG.supabaseUrl || '').replace(/\/$/, '') + '/rest/v1/' + (CFG.table || 'performance_tracker');
     const page = 1000, out = [];
