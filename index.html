@@ -206,7 +206,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
         <tbody>
           <tr><td><b>Availability</b></td><td>Share of checks where the site responded correctly. 99.9% is about 43 minutes of downtime a month.</td><td>≥ 99.9%</td><td>&lt; 99.5%</td></tr>
           <tr><td><b>LCP</b><span>Largest Contentful Paint</span></td><td>When the main content becomes visible.</td><td>≤ 2.5 s</td><td>&gt; 4 s</td></tr>
-          <tr data-metric="inp" hidden><td><b>INP</b><span>Interaction to Next Paint</span></td><td>How quickly the page reacts to taps and clicks.</td><td>≤ 200 ms</td><td>&gt; 500 ms</td></tr>
+          <tr data-metric="inp"><td><b>INP</b><span>Interaction to Next Paint</span></td><td>How quickly the page reacts to taps and clicks.</td><td>≤ 200 ms</td><td>&gt; 500 ms</td></tr>
           <tr data-metric="cls" hidden><td><b>CLS</b><span>Cumulative Layout Shift</span></td><td>How much the layout jumps while loading.</td><td>≤ 0.1</td><td>&gt; 0.25</td></tr>
           <tr class="g-stage"><td><b><i class="sw stage-net"></i>Redirect</b><span>Network · infra</span></td><td>Hops before the real page, such as http to https or non-www to www.</td><td>–</td><td>–</td></tr>
           <tr class="g-stage"><td><b><i class="sw stage-net"></i>DNS</b><span>Network · infra</span></td><td>Looking up the site's address.</td><td>–</td><td>–</td></tr>
@@ -219,7 +219,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
         </tbody>
       </table>
     </div>
-    <p class="gloss-note">LCP is measured at the 75th percentile, Google's recommended Core Web Vitals KPI. The response time stages come from Site24x7 real user monitoring.</p>
+    <p class="gloss-note">LCP and INP are measured at the 75th percentile, Google's recommended Core Web Vitals KPI. The response time stages come from Site24x7 real user monitoring.</p>
     <p class="gloss-note"><i class="mig">Partial month</i> marks a site that moved to DXP+ during that month, so its figures mix the old and new site. The first full month on DXP+ is the one to compare.</p>
   </section>
 </div>
@@ -245,7 +245,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     { k: 'market', label: 'Market', cls: 'l opt' },
     { k: 'uptime', db: 'uptime_pct', label: 'Availability', note: '≥ 99.9%', t: [99.9, 99.5, true], f: (v) => v.toFixed(2) + '%' },
     { k: 'lcp', db: 'lcp_s', label: 'LCP', note: '≤ 2.5 s', t: [2.5, 4, false], f: (v) => v.toFixed(2) + ' s' },
-    { k: 'inp', db: 'inp_ms', hidden: true, label: 'INP', note: '≤ 200 ms', t: [200, 500, false], f: ms },
+    { k: 'inp', db: 'inp_ms', label: 'INP', note: '≤ 200 ms', t: [200, 500, false], f: ms },
     { k: 'ttfb', db: 'ttfb_ms', hidden: true, label: 'TTFB', note: '≤ 800 ms', t: [800, 1800, false], f: ms },
     { k: 'cls', db: 'cls', hidden: true, label: 'CLS', note: '≤ 0.1', t: [0.1, 0.25, false], f: (v) => v.toFixed(2) },
     // response time breakdown (Site24x7 RUM stages), in the order they happen
