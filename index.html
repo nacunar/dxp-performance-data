@@ -75,6 +75,9 @@ thead tr.grp th.grp-stage { border-bottom: 2px solid var(--line); }
 th.stage, td.stage { background: color-mix(in srgb, var(--fg) 2.5%, var(--panel)); }
 #body tr:hover td.stage { background: color-mix(in srgb, var(--fg) 6%, var(--panel)); }
 td.total, th.total button { font-weight: 600; }
+#foot td { position: sticky; bottom: 0; background: var(--panel); border-top: 2px solid var(--line); border-bottom: 0; font-weight: 600; }
+#foot td.l { text-align: left; color: var(--muted); font-weight: 500; }
+#foot td.l small { font-weight: 400; margin-left: 6px; }
 th.stage button::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-right: 5px; vertical-align: 1px; background: var(--st-c); }
 .stage-net { --st-c: var(--st-net); } .stage-back { --st-c: var(--st-back); } .stage-front { --st-c: var(--st-front); }
 th { position: sticky; top: 0; z-index: 1; background: var(--panel); text-align: right; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line); padding: 0; white-space: nowrap; }
@@ -195,6 +198,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       <table>
         <thead><tr id="head"></tr></thead>
         <tbody id="body"></tbody>
+        <tfoot id="foot"></tfoot>
       </table>
       <div class="empty" id="empty" hidden>No sites match these filters.</div>
     </div>
@@ -513,6 +517,27 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
       });
       return tr;
     }));
+    // averages of the sites currently shown
+    const ftr = document.createElement('tr');
+    shown.forEach((c, i) => {
+      const td = document.createElement('td');
+      if (i === 0) {
+        td.className = 'l';
+        td.textContent = 'Average';
+        const sm = document.createElement('small'); sm.textContent = list.length + ' site' + (list.length === 1 ? '' : 's');
+        td.append(sm);
+      } else if (c.f) {
+        const vals = list.map((r) => r[c.k]).filter((v) => v != null && v !== '' && !isNaN(v));
+        if (vals.length) {
+          const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+          td.textContent = c.f(avg);
+          const lv = level(c, avg); if (lv) td.classList.add(lv);
+          if (vals.length < list.length) td.title = 'Average of ' + vals.length + ' sites with data';
+        }
+      } else if (c.cls) td.className = c.cls;
+      ftr.appendChild(td);
+    });
+    $('foot').replaceChildren(...(list.length ? [ftr] : []));
   }
   // ---------- site detail panel ----------
   let openSite = null, opener = null;
