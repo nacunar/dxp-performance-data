@@ -64,9 +64,11 @@ td .mig { margin-left: 8px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mig { color: #8fb3f0; } }
 .tablewrap { max-height: 36rem; overflow: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
-th.num { width: 6.25rem; } /* metric columns share one width; Site and Region take the rest */
+/* fixed layout: Site and Region get set shares, the metric columns split the rest evenly */
+.tablewrap table { table-layout: fixed; min-width: 48rem; }
+#head th:first-child { width: 24%; }
+#head th.opt { width: 13%; }
 th.num.stage { width: 4.75rem; }
-table { min-width: 64rem; }
 thead tr.grp th { top: 0; height: 26px; padding: 6px 8px 0; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 0; text-align: center; }
 thead tr.grp th.grp-stage { border-bottom: 2px solid var(--line); }
 #head th { top: 0; }
