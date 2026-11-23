@@ -70,6 +70,11 @@ table { min-width: 64rem; }
 thead tr.grp th { top: 0; height: 26px; padding: 6px 8px 0; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 0; text-align: center; }
 thead tr.grp th.grp-stage { border-bottom: 2px solid var(--line); }
 #head th { top: 26px; }
+table.bd-off .stage, table.bd-off .grp-stage { display: none; }
+table.bd-off { min-width: 44rem; }
+.bd-toggle { font: inherit; font-size: 11px; font-weight: 500; color: var(--accent2, #2f5fb3); background: none; border: 0; padding: 0; cursor: pointer; white-space: nowrap; }
+.bd-toggle:hover { text-decoration: underline; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bd-toggle { color: #8fb3f0; } }
 th.stage, td.stage { background: color-mix(in srgb, var(--fg) 2.5%, var(--panel)); }
 #body tr:hover td.stage { background: color-mix(in srgb, var(--fg) 6%, var(--panel)); }
 td.total, th.total button { font-weight: 600; }
@@ -190,7 +195,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     </div>
     <div class="meta"><span class="meta-l"><span id="count"></span><button type="button" class="reset" id="f-reset" hidden>Clear filters</button></span><span class="legend"><span class="w">Needs improvement</span><span class="b">Poor</span><span class="p"><i class="mig">Partial month</i></span></span></div>
     <div class="tablewrap">
-      <table>
+      <table id="tbl">
         <thead><tr id="head"></tr></thead>
         <tbody id="body"></tbody>
       </table>
@@ -345,10 +350,29 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     if (shown[gi].stage) {
       let n = 0; while (gi + n < shown.length && shown[gi + n].stage) n++;
       th.colSpan = n; th.className = 'grp-stage'; th.textContent = 'Response time breakdown (ms)'; gi += n;
-    } else { th.className = shown[gi].cls && shown[gi].cls.includes('opt') ? 'opt' : ''; gi++; }
+    } else {
+      th.className = shown[gi].cls && shown[gi].cls.includes('opt') ? 'opt' : '';
+      if (shown[gi].total) {
+        const t = document.createElement('button'); t.type = 'button'; t.className = 'bd-toggle'; t.id = 'bd-toggle';
+        th.appendChild(t);
+      }
+      gi++;
+    }
     grp.appendChild(th);
   }
   $('head').before(grp);
+  // response time breakdown: collapsed by default, remembered per browser
+  let bdOpen = false;
+  try { bdOpen = localStorage.getItem('dxp-bd-open') === '1'; } catch (e) {}
+  const setBd = (open) => {
+    bdOpen = open;
+    $('tbl').classList.toggle('bd-off', !open);
+    $('bd-toggle').textContent = open ? '‹ Hide breakdown' : 'Show breakdown ›';
+    $('bd-toggle').setAttribute('aria-expanded', String(open));
+    try { localStorage.setItem('dxp-bd-open', open ? '1' : '0'); } catch (e) {}
+  };
+  $('bd-toggle').addEventListener('click', () => setBd(!bdOpen));
+  setBd(bdOpen);
   shown.forEach((c) => {
     const th = document.createElement('th');
     th.className = [(c.cls || '').replace('site', ''), c.f ? 'num' : '', c.stage ? 'stage stage-' + c.stage : '', c.total ? 'total' : ''].join(' ').replace(/\s+/g, ' ').trim();
