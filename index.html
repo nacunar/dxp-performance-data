@@ -69,12 +69,7 @@ th.num.stage { width: 4.75rem; }
 table { min-width: 64rem; }
 thead tr.grp th { top: 0; height: 26px; padding: 6px 8px 0; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 0; text-align: center; }
 thead tr.grp th.grp-stage { border-bottom: 2px solid var(--line); }
-#head th { top: 26px; }
-table.bd-off .stage, table.bd-off .grp-stage { display: none; }
-table.bd-off { min-width: 44rem; }
-.bd-toggle { font: inherit; font-size: 11px; font-weight: 500; color: var(--accent2, #2f5fb3); background: none; border: 0; padding: 0; cursor: pointer; white-space: nowrap; }
-.bd-toggle:hover { text-decoration: underline; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bd-toggle { color: #8fb3f0; } }
+#head th { top: 0; }
 th.stage, td.stage { background: color-mix(in srgb, var(--fg) 2.5%, var(--panel)); }
 #body tr:hover td.stage { background: color-mix(in srgb, var(--fg) 6%, var(--panel)); }
 td.total, th.total button { font-weight: 600; }
@@ -195,7 +190,7 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     </div>
     <div class="meta"><span class="meta-l"><span id="count"></span><button type="button" class="reset" id="f-reset" hidden>Clear filters</button></span><span class="legend"><span class="w">Needs improvement</span><span class="b">Poor</span><span class="p"><i class="mig">Partial month</i></span></span></div>
     <div class="tablewrap">
-      <table id="tbl">
+      <table>
         <thead><tr id="head"></tr></thead>
         <tbody id="body"></tbody>
       </table>
@@ -213,18 +208,12 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
           <tr><td><b>LCP</b><span>Largest Contentful Paint</span></td><td>When the main content becomes visible.</td><td>≤ 2.5 s</td><td>&gt; 4 s</td></tr>
           <tr data-metric="inp"><td><b>INP</b><span>Interaction to Next Paint</span></td><td>How quickly the page reacts to taps and clicks.</td><td>≤ 200 ms</td><td>&gt; 500 ms</td></tr>
           <tr data-metric="cls" hidden><td><b>CLS</b><span>Cumulative Layout Shift</span></td><td>How much the layout jumps while loading.</td><td>≤ 0.1</td><td>&gt; 0.25</td></tr>
-          <tr class="g-stage"><td><b><i class="sw stage-net"></i>Redirect</b><span>Network · infra</span></td><td>Hops before the real page, such as http to https or non-www to www.</td><td>–</td><td>–</td></tr>
-          <tr class="g-stage"><td><b><i class="sw stage-net"></i>DNS</b><span>Network · infra</span></td><td>Looking up the site's address.</td><td>–</td><td>–</td></tr>
-          <tr class="g-stage"><td><b><i class="sw stage-net"></i>Connection</b><span>Network · infra</span></td><td>Opening the secure connection to the nearest server or CDN edge.</td><td>–</td><td>–</td></tr>
-          <tr class="g-stage"><td><b><i class="sw stage-back"></i>Server</b><span>Backend · infra</span></td><td>Waiting for the server or CDN to prepare the page: caching, WAF and server time. Together with DNS and Connection it makes up the time to first byte (TTFB, target ≤ 800 ms).</td><td>–</td><td>–</td></tr>
-          <tr class="g-stage"><td><b><i class="sw stage-back"></i>Download</b><span>Backend · infra and dev</span></td><td>Receiving the HTML of the page.</td><td>–</td><td>–</td></tr>
-          <tr class="g-stage"><td><b><i class="sw stage-front"></i>Rendering</b><span>Front-end · dev and markets</span></td><td>Loading and running everything the page pulls in (CSS, scripts, images, tags) until it finishes loading. Includes Site24x7's page and document rendering.</td><td>–</td><td>–</td></tr>
-          <tr><td><b>Response time</b><span>Total</span></td><td>From the click until the page finishes loading. The stages above add up to it.</td><td>–</td><td>–</td></tr>
+          <tr><td><b>Response time</b><span>Total</span></td><td>From the click until the page finishes loading: network, server and front-end rendering combined (Site24x7).</td><td>–</td><td>–</td></tr>
           <tr><td><b>Apdex</b><span>Application Performance Index</span></td><td>User satisfaction with response time, from 0 to 1. It is calculated from the response time above.</td><td>≥ 0.85</td><td>&lt; 0.70</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="gloss-note">LCP and INP are measured at the 75th percentile, Google's recommended Core Web Vitals KPI. The response time stages come from Site24x7 real user monitoring.</p>
+    <p class="gloss-note">LCP and INP are measured at the 75th percentile, Google's recommended Core Web Vitals KPI. Response time and Apdex come from Site24x7 real user monitoring.</p>
     <p class="gloss-note"><i class="mig">Partial month</i> marks a site that moved to DXP+ during that month, so its figures mix the old and new site. The first full month on DXP+ is the one to compare.</p>
   </section>
 </div>
@@ -254,12 +243,12 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
     { k: 'ttfb', db: 'ttfb_ms', hidden: true, label: 'TTFB', note: '≤ 800 ms', t: [800, 1800, false], f: ms },
     { k: 'cls', db: 'cls', hidden: true, label: 'CLS', note: '≤ 0.1', t: [0.1, 0.25, false], f: (v) => v.toFixed(2) },
     // response time breakdown (Site24x7 RUM stages), in the order they happen
-    { k: 'redirect', db: 'redirect_ms', stage: 'net', label: 'Redirect', f: ms, tf: msShort },
-    { k: 'dns', db: 'dns_ms', stage: 'net', label: 'DNS', f: ms, tf: msShort },
-    { k: 'connection', db: 'connection_ms', stage: 'net', label: 'Connection', f: ms, tf: msShort },
-    { k: 'server', db: 'server_ms', stage: 'back', label: 'Server', f: ms, tf: msShort },
-    { k: 'download', db: 'download_ms', stage: 'back', label: 'Download', f: ms, tf: msShort },
-    { k: 'rendering', db: 'rendering_ms', stage: 'front', label: 'Rendering', f: ms, tf: msShort },
+    { k: 'redirect', hidden: true, db: 'redirect_ms', stage: 'net', label: 'Redirect', f: ms, tf: msShort },
+    { k: 'dns', hidden: true, db: 'dns_ms', stage: 'net', label: 'DNS', f: ms, tf: msShort },
+    { k: 'connection', hidden: true, db: 'connection_ms', stage: 'net', label: 'Connection', f: ms, tf: msShort },
+    { k: 'server', hidden: true, db: 'server_ms', stage: 'back', label: 'Server', f: ms, tf: msShort },
+    { k: 'download', hidden: true, db: 'download_ms', stage: 'back', label: 'Download', f: ms, tf: msShort },
+    { k: 'rendering', hidden: true, db: 'rendering_ms', stage: 'front', label: 'Rendering', f: ms, tf: msShort },
     { k: 'response', db: 'response_ms', total: true, label: 'Response time', note: 'total', f: (v) => (v / 1000).toFixed(2) + ' s' },
     { k: 'apdex', db: 'apdex', label: 'Apdex', note: '≥ 0.85', t: [0.85, 0.7, true], f: (v) => v.toFixed(2) },
   ];
@@ -342,37 +331,6 @@ td.warn { color: var(--warn); } td.bad { color: var(--bad); font-weight: 600; }
   // ---------- table ----------
   const shown = COLS.filter((c) => c.k !== 'market' && !c.hidden);
   $('head').innerHTML = '';
-  // group row: a label spanning the response time stages
-  const grp = document.createElement('tr'); grp.className = 'grp';
-  let gi = 0;
-  while (gi < shown.length) {
-    const th = document.createElement('th');
-    if (shown[gi].stage) {
-      let n = 0; while (gi + n < shown.length && shown[gi + n].stage) n++;
-      th.colSpan = n; th.className = 'grp-stage'; th.textContent = 'Response time breakdown (ms)'; gi += n;
-    } else {
-      th.className = shown[gi].cls && shown[gi].cls.includes('opt') ? 'opt' : '';
-      if (shown[gi].total) {
-        const t = document.createElement('button'); t.type = 'button'; t.className = 'bd-toggle'; t.id = 'bd-toggle';
-        th.appendChild(t);
-      }
-      gi++;
-    }
-    grp.appendChild(th);
-  }
-  $('head').before(grp);
-  // response time breakdown: collapsed by default, remembered per browser
-  let bdOpen = false;
-  try { bdOpen = localStorage.getItem('dxp-bd-open') === '1'; } catch (e) {}
-  const setBd = (open) => {
-    bdOpen = open;
-    $('tbl').classList.toggle('bd-off', !open);
-    $('bd-toggle').textContent = open ? '‹ Hide breakdown' : 'Show breakdown ›';
-    $('bd-toggle').setAttribute('aria-expanded', String(open));
-    try { localStorage.setItem('dxp-bd-open', open ? '1' : '0'); } catch (e) {}
-  };
-  $('bd-toggle').addEventListener('click', () => setBd(!bdOpen));
-  setBd(bdOpen);
   shown.forEach((c) => {
     const th = document.createElement('th');
     th.className = [(c.cls || '').replace('site', ''), c.f ? 'num' : '', c.stage ? 'stage stage-' + c.stage : '', c.total ? 'total' : ''].join(' ').replace(/\s+/g, ' ').trim();
